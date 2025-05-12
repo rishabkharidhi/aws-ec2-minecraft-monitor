@@ -17,7 +17,7 @@ else
     SHUTDOWNTIMER=$DEFAULT_SHUTDOWNTIMER
 fi
 
-MONITOR_IP="13.56.206.173"
+# MONITOR_IP="13.56.206.173"
 MONITOR_PORT="25565"
 echo "Monitoring connection and shutdown conditions for \$MONITOR_IP:\$MONITOR_PORT..."
 
