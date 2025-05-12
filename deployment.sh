@@ -27,7 +27,7 @@ while true; do
     mc_status=$(systemctl is-active minecraft.service)
 
     if [ "\$mc_status" != "active" ]; then
-        connection=\$(ss -tn state syn-recv "( sport = :\$MONITOR_PORT )" | grep "\$MONITOR_IP")
+        connection=$(ss -tn state syn-recv "( sport = :$MONITOR_PORT )")
         if [[ -n "\$connection" ]]; then
             echo "\$(date): Connection requested to \$MONITOR_IP:\$MONITOR_PORT but server is off"
             echo "\$(date): Starting Minecraft server"
