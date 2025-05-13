@@ -77,7 +77,7 @@ else
     ram_size="\$DEFAULT_RAM"
 fi
 echo "ram: \$ram_size"
-java -Xmx\$ram_size -Xms\$ram_size -jar server.jar nogui
+exec java -Xmx1200M -Xms1200M -jar server.jar nogui
 EOF
 
 chmod +x start
@@ -116,6 +116,9 @@ PartOf=minecraft.service
 
 [Socket]
 ListenFIFO=%t/minecraft.stdin
+
+[Install]
+WantedBy=sockets.target
 EOF
 
 cat <<EOF > monitor_minecraft.service
