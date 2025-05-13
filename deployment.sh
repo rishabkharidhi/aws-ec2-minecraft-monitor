@@ -75,7 +75,8 @@ else
     ram_size="\$DEFAULT_RAM"
 fi
 echo "ram: \$ram_size"
-exec java -Xmx1200M -Xms1200M -jar server.jar nogui
+# exec java -Xmx1200M -Xms1200M -jar server.jar nogui
+exec java -Xmx\$ram_size -Xms\$ram_size -jar forge-1.20.1-47.1.0.jar nogui
 EOF
 
 chmod +x start
