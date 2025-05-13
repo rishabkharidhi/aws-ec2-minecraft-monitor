@@ -9,44 +9,42 @@ rm -f monitor
 cat <<EOF > monitor
 #!/bin/bash
 
-SSM_SHUTDOWNTIMER=$(aws ssm get-parameter --name "/mc/shutdowntimer" --query "Parameter.Value" --output text)
+SSM_SHUTDOWNTIMER=900
 DEFAULT_SHUTDOWNTIMER=900
-if [ $? -eq 0 ] && [[ "$SSM_SHUTDOWNTIMER" =~ ^[0-9]+$ ]] && [ "$SSM_SHUTDOWNTIMER" -gt 0 ]; then
+if [ 0 -eq 0 ] && [[ "" =~ ^[0-9]+$ ]] && [ "" -gt 0 ]; then
     SHUTDOWNTIMER=$SSM_SHUTDOWNTIMER
 else
     SHUTDOWNTIMER=$DEFAULT_SHUTDOWNTIMER
 fi
 
-# MONITOR_IP="13.56.206.173"
+MONITOR_IP="13.56.206.173"
 MONITOR_PORT="25565"
-echo "Monitoring connection and shutdown conditions for \$MONITOR_IP:\$MONITOR_PORT..."
+echo "Monitoring connection and shutdown conditions for $MONITOR_IP:$MONITOR_PORT..."
 
 lastdisconnect=0
 
 while true; do
     mc_status=$(systemctl is-active minecraft.service)
 
-    if [ "\$mc_status" != "active" ]; then
-        connection=$(ss -tn state syn-recv "( sport = :$MONITOR_PORT )")
-        if [[ -n "\$connection" ]]; then
-            echo "\$(date): Connection requested to \$MONITOR_IP:\$MONITOR_PORT but server is off"
-            echo "\$(date): Starting Minecraft server"
+    if [ "$mc_status" != "active" ]; then
+        if timeout 3 sudo tcpdump -c 1 -n -i any 'tcp[tcpflags] & tcp-syn != 0 and port 25565' 2>/dev/null; then
+            echo "$(date): TCP SYN detected on port $MONITOR_PORT — starting Minecraft server"
             sudo systemctl start minecraft.service
         fi
     else
-        connections=\$(ss -tn state established "( sport = :\$MONITOR_PORT )" | grep -c ESTAB)
-        if [ "\$connections" -eq 0 ]; then
+        connections=$(ss -tn | grep ":$MONITOR_PORT" | grep -c ESTAB)
+        if [ "$connections" -eq 0 ]; then
             echo "0 connections"
-            if [ "\$lastdisconnect" -eq 0 ]; then
+            if [ "$lastdisconnect" -eq 0 ]; then
                 echo "no players on server, starting timer..."
-                lastdisconnect=\$(date +%s)
+                lastdisconnect=$(date +%s)
             else
-                now=\$(date +%s)
-                elapsed=\$((now - lastdisconnect))
+                now=$(date +%s)
+                elapsed=$((now - lastdisconnect))
                 echo "no players again, check if timer has reached time"
-                echo "shutdowntimer: \$SHUTDOWNTIMER timer: \$elapsed"
-                if [ "\$elapsed" -ge "\$SHUTDOWNTIMER" ]; then
-                    echo "timer has reached time, begin shutdown logic"
+                echo "shutdowntimer: $SHUTDOWNTIMER timer: $elapsed"
+                if [[ "$elapsed" =~ ^[0-9]+$ ]] && [ "$elapsed" -ge "$SHUTDOWNTIMER" ]; then
+                    echo "$(date): No players detected for 15 minutes — shutting down server"
                     echo "Stop Minecraft server"
                     sudo ./stop
                     sleep 20
@@ -85,7 +83,7 @@ chmod +x start
 # Create stop script
 cat <<EOF > stop
 #!/bin/bash
-echo "/stop" > /run/minecraft.stdin
+sudo echo "/stop" > /run/minecraft.stdin
 EOF
 
 # Create systemd service files
